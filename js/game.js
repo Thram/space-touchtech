@@ -129,7 +129,7 @@ var Game = (function () {
             loadingProgress.innerHTML = (ev.progress * 100).toFixed(0);
         }
 
-        queue = new createjs.LoadQueue(false);
+        queue = new createjs.LoadQueue(); // new createjs.LoadQueue(false) if local
         queue.installPlugin(createjs.Sound);
         queue.addEventListener("complete", _onLoadQueueComplete);
         queue.addEventListener("progress", _onLoadingProgress);
