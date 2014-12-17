@@ -40,6 +40,15 @@
     <button id="replay">Play Again!</button>
 </div>
 
+<div id="loading-wrapper">
+    <svg width="40" height="40" viewbox="0 0 40 40">
+        <!-- <rect width="40" height="40" class="rect" />  <- this looks buggy in retina safari -->
+        <polygon points="0 0 0 40 40 40 40 0" class="rect"/>
+    </svg>
+    <h1>Loading</h1>
+    <h2><span id="loading-progress">0</span>%</h2>
+</div>
+
 <div id="wrapper">
 
     <canvas id="canvas" width=400 height=600

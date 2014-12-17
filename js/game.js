@@ -4,12 +4,12 @@
 var Game = (function () {
     var stage, queue;
 
-    var canvasBBox, g;
+    var canvasBBox;
 
     var galaxy = new createjs.Graphics(), stars = [],
         bullets = [], bulletG, characters = [], ship;
 
-    var BULLET_SPEED = 15, speed = 8, moveLeft = false, moveRight = false,
+    var BULLET_SPEED = 15, BG_SPEED = 8, speed = 8, moveLeft = false, moveRight = false,
         moveUp = false, moveDown = false;
 
     var TOUCHTECH_GUYS = [
@@ -71,7 +71,7 @@ var Game = (function () {
     }
 
     function _renderCharacter() {
-        var time = randRange(0, 30) * 100;
+        var time = randRange(0, 5) * 1000;
         setTimeout(
             function () {
                 var character = new createjs.Bitmap(
@@ -92,17 +92,48 @@ var Game = (function () {
             }, time);
     }
 
-    function _onLoadQueueComplete() {
-        _renderBullet();
-        _renderGalaxy();
-        _renderShip();
-        _renderCharacter();
+    function _preloadAssets() {
+        var assetsLoaded = 0;
 
-        createjs.Ticker.setFPS(30);
-        createjs.Ticker.addEventListener("tick", _tick);
+        var assets = TOUCHTECH_GUYS.concat(
+            [
+                {id: "boom", src: "img/boom.png"},
+                {id: "ship", src: "img/ship.png"},
+                {id: "sound-theme-song", src: "sounds/Invaders_must_die_8-Bit.mp3"},
+                {id: "sound-shoot", src: "sounds/shoot.mp3"},
+                {id: "sound-explosion", src: "sounds/explosion.mp3"}
+            ]);
 
-        window.onkeydown = onKeyDown;
-        window.onkeyup = onKeyUp;
+        function _onLoadQueueComplete(ev) {
+            var loadingProgress = document.querySelector("#loading-progress");
+            loadingProgress.innerHTML = 100;
+            var instance = createjs.Sound.play("sound-theme-song", {loop: -1});
+            instance.volume = 0.5;
+            _renderBullet();
+            _renderGalaxy();
+            _renderShip();
+            _renderCharacter();
+
+            createjs.Ticker.setFPS(30);
+            createjs.Ticker.addEventListener("tick", _tick);
+
+            window.onkeydown = onKeyDown;
+            window.onkeyup = onKeyUp;
+            var loading = document.querySelector("#loading-wrapper");
+            loading.style.display = "none";
+        }
+
+        function _onLoadingProgress(ev) {
+            assetsLoaded++;
+            var loadingProgress = document.querySelector("#loading-progress");
+            loadingProgress.innerHTML = (ev.progress * 100).toFixed(0);
+        }
+
+        queue = new createjs.LoadQueue(false);
+        queue.installPlugin(createjs.Sound);
+        queue.addEventListener("complete", _onLoadQueueComplete);
+        queue.addEventListener("progress", _onLoadingProgress);
+        queue.loadManifest(assets);
     }
 
     function initialize() {
@@ -110,16 +141,8 @@ var Game = (function () {
             moveLeft = false, moveRight = false,
             moveUp = false, moveDown = false;
         canvasBBox = document.getElementById("canvas").getBoundingClientRect();
-        stage = new createjs.Stage(canvas);
-        queue = new createjs.LoadQueue(false);
-        //queue.installPlugin(createjs.Sound);
-        queue.addEventListener("complete", _onLoadQueueComplete);
-        queue.loadManifest(
-            TOUCHTECH_GUYS.concat(
-                [
-                    {id: "boom", src: "img/boom.png"},
-                    {id: "ship", src: "img/ship.png"}
-                ]));
+        stage = new createjs.Stage("canvas");
+        _preloadAssets();
     }
 
     function onKeyDown(e) {
@@ -175,18 +198,21 @@ var Game = (function () {
                 break;
             // Space
             case 32:
-                doFire();
+                _shoot();
                 break;
         }
     }
 
-    function doFire() {
+    function _shoot() {
         var bullet = new createjs.Shape(bulletG);
         bullet.scaleY = 1.5;
         bullet.x = ship.x;
         bullet.y = ship.y - 30;
         bullet.setBounds(ship.x, ship.y - 30, 10, 10);
         bullets.push(bullet);
+
+        var instance = createjs.Sound.play("sound-shoot");
+        instance.volume = 0.5;
 
         stage.addChild(bullet);
     }
@@ -228,6 +254,8 @@ var Game = (function () {
                     stage.removeChild(bullet);
                     bullets.splice(bullets.indexOf(bullet), 1);
                     Score.addPoints();
+                    var instance = createjs.Sound.play("sound-explosion");
+                    instance.volume = 0.5;
                 }
             }
         }
@@ -244,6 +272,8 @@ var Game = (function () {
             var ev = new Event("game-over");
             ev.data = {final_score: Score.getPoints()};
             document.dispatchEvent(ev);
+            var instance = createjs.Sound.play("sound-explosion");
+            instance.volume = 0.5;
         }
     }
 
